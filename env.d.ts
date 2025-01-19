@@ -12,6 +12,7 @@ declare global {
       PARCEL_KEY: string;
       BLOXLINK_KEY: string;
       MONGODB_URL: string;
+      PARCEL_ID: string;
     }
   }
 }

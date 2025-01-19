@@ -1,7 +1,10 @@
 import { Roles } from "@constants";
 import {
+  ButtonBuilder,
+  ButtonStyle,
   EmbedBuilder,
   SlashCommandStringOption,
+  SlashCommandUserOption,
   type GuildTextBasedChannel,
 } from "discord.js";
 import { ErrorEmbed } from "embeds/response";
@@ -11,6 +14,7 @@ import requiresRole from "middleware/requiresRole";
 import { ClassicThumbnailsApi, ClassicUsersApi } from "openblox/classic";
 import user from "schemas/user";
 import { defineSlashCommand, SlashCommand } from "structs/Command";
+import actionRow from "util/actionRow";
 import { fetchOrCreateUser } from "util/userStore";
 
 const schema = defineSlashCommand({
@@ -24,7 +28,7 @@ const schema = defineSlashCommand({
       .setDescription("The requested product")
       .setRequired(true)
       .setAutocomplete(true),
-    new SlashCommandStringOption()
+    new SlashCommandUserOption()
       .setName("discordid")
       .setDescription("Enter the Discord ID of the user"),
     new SlashCommandStringOption()
@@ -44,7 +48,7 @@ export default new SlashCommand(
 
       const options = {
         product: interaction.options.getString("product"),
-        discordId: interaction.options.getString("discordid"),
+        discordId: interaction.options.getUser("discordid"),
         robloxId: interaction.options.getString("robloxid"),
         reason: interaction.options.getString("reason"),
       };
@@ -74,7 +78,7 @@ export default new SlashCommand(
       )) as GuildTextBasedChannel;
       const [productName, productId] = options.product!.split("|");
       const userProfile = await fetchOrCreateUser({
-        discordId: options.discordId,
+        discordId: options.discordId?.id,
         robloxId: options.robloxId,
       });
 
@@ -140,10 +144,33 @@ export default new SlashCommand(
         ],
       });
 
+      await client.users
+        .send(userProfile.discordId, {
+          embeds: [
+            new EmbedBuilder()
+              .setColor("#cc8eff")
+              .setTitle("Tada! You've received your asset!")
+              .setDescription(
+                `You've received **${productName}**. You can download it below!`
+              ),
+          ],
+          components: [
+            actionRow([
+              new ButtonBuilder()
+                .setLabel("Download the Product")
+                .setStyle(ButtonStyle.Link)
+                .setURL(
+                  `https://my.parcelroblox.com/retrieve/${Bun.env.PARCEL_ID}/${productId}`
+                ),
+            ]),
+          ],
+        })
+        .catch();
+
       return interaction.editReply({
         embeds: [
           new ErrorEmbed(
-            `I've successfully given **${productName}** to <@${userProfile.discordId}>`
+            `I've successfully given **${productName}** to **${userInfo.name}** (${userProfile.robloxId})`
           ),
         ],
       });
