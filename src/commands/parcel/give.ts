@@ -1,9 +1,14 @@
 import { Roles } from "@constants";
-import { EmbedBuilder, SlashCommandStringOption } from "discord.js";
+import {
+  EmbedBuilder,
+  SlashCommandStringOption,
+  type GuildTextBasedChannel,
+} from "discord.js";
 import { ErrorEmbed } from "embeds/response";
 import got from "got";
-import { baseLogger } from "index";
+import { baseLogger, client } from "index";
 import requiresRole from "middleware/requiresRole";
+import { ClassicThumbnailsApi, ClassicUsersApi } from "openblox/classic";
 import user from "schemas/user";
 import { defineSlashCommand, SlashCommand } from "structs/Command";
 import { fetchOrCreateUser } from "util/userStore";
@@ -41,9 +46,9 @@ export default new SlashCommand(
         product: interaction.options.getString("product"),
         discordId: interaction.options.getString("discordid"),
         robloxId: interaction.options.getString("robloxid"),
+        reason: interaction.options.getString("reason"),
       };
 
-      // Validation: Both IDs or neither provided
       if (options.discordId && options.robloxId) {
         return interaction.editReply({
           embeds: [
@@ -64,11 +69,23 @@ export default new SlashCommand(
         });
       }
 
+      const parcelLogs = (await client.channels.fetch(
+        "1280065540555145267"
+      )) as GuildTextBasedChannel;
       const [productName, productId] = options.product!.split("|");
       const userProfile = await fetchOrCreateUser({
         discordId: options.discordId,
         robloxId: options.robloxId,
       });
+
+      const { data: userInfo } = await ClassicUsersApi.userInfo({
+        userId: Number(userProfile.robloxId),
+      });
+      const { data: userThumbnail } =
+        await ClassicThumbnailsApi.avatarsHeadshotsThumbnails({
+          userIds: [Number(userProfile.robloxId)],
+          size: "420x420",
+        });
 
       if (userProfile.products.some((x) => x.productId === productId)) {
         return interaction.editReply({
@@ -97,14 +114,42 @@ export default new SlashCommand(
         { $set: { products: userProfile.products } }
       );
 
+      await parcelLogs.send({
+        embeds: [
+          new EmbedBuilder()
+            .setColor("#cc8eff")
+            .setTitle("Product Given")
+            .setDescription("Staff Member: <@" + interaction.user.id + ">")
+            .addFields(
+              {
+                name: "Product Name",
+                value: productName,
+              },
+              {
+                name: "Receiver",
+                value: `${userInfo.name} (${userProfile.robloxId})`,
+              },
+              {
+                name: "Reason",
+                value: options.reason ?? "No Reason Provided",
+              }
+            )
+            .setThumbnail(
+              userThumbnail[Number(userProfile.robloxId)]?.imageUrl!
+            ),
+        ],
+      });
+
       return interaction.editReply({
         embeds: [
           new ErrorEmbed(
-            `I've successfully given **${productName}** to the requested user.`
+            `I've successfully given **${productName}** to <@${userProfile.discordId}>`
           ),
         ],
       });
     } catch (err) {
+      baseLogger.error(err);
+
       if (err instanceof Error) {
         const errorMessages: Record<string, string> = {
           BLOXLINK_ERR:
@@ -121,7 +166,6 @@ export default new SlashCommand(
         });
       }
 
-      baseLogger.error(err);
       return interaction.editReply({
         embeds: [
           new ErrorEmbed("An unexpected error occurred, please try again."),

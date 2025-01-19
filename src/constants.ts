@@ -1,3 +1,6 @@
+import type { GuildTextBasedChannel } from "discord.js";
+import { client } from "index";
+
 /**
  * User & Role IDs that may be used over and over
  */
