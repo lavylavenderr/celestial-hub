@@ -34,7 +34,7 @@ export default new AutocompleteComponent(
     await interaction.respond(
       productList!.data.products.map((product) => ({
         name: product.name,
-        value: product.id,
+        value: product.name + "|" + product.id,
       }))
     );
   }

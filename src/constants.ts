@@ -10,7 +10,7 @@ export enum People {
 export enum Roles {
   Executive = "1279757173982892062",
   BoardOfDirectors = "1281095722267181239",
-  ParcelPerms = "1"
+  ParcelPerms = "1281095722267181239"
 }
 
 /**

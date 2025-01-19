@@ -1,4 +1,3 @@
-import { MessageFlags, type ChatInputCommandInteraction } from "discord.js";
 import { MissingRoleEmbed } from "embeds/role";
 import type { ReplyableInteractionMiddlewareFn } from "types";
 import hasRole from "util/hasRole";
@@ -16,7 +15,6 @@ export default function requiresRole(
             embeds: [new MissingRoleEmbed(roleId)],
           })
         : await interaction.reply({
-            flags: MessageFlags.Ephemeral,
             embeds: [new MissingRoleEmbed(roleId)],
           });
 
