@@ -102,14 +102,27 @@ export default new SlashCommand(
       await got("https://v2.parcelroblox.com/whitelist/assign", {
         method: "POST",
         headers: { Authorization: Bun.env.PARCEL_KEY },
+        responseType: "json",
         json: {
           product_id: productId,
           userid: userProfile.robloxId,
           userid_type: "roblox",
         },
-      }).catch((err) => {
-        baseLogger.error(err);
-        throw new Error("PARCEL_ERR");
+        hooks: {
+          beforeError: [
+            (error) => {
+              const { response } = error;
+              const responseBody = response?.body as any;
+
+              if (responseBody) {
+                (error.name = "PARCEL_ERR"),
+                  (error.message = responseBody.message);
+              }
+
+              return error;
+            },
+          ],
+        },
       });
 
       userProfile.products.push({ name: productName, productId });
@@ -181,16 +194,16 @@ export default new SlashCommand(
         const errorMessages: Record<string, string> = {
           BLOXLINK_ERR:
             "Oops! There was an issue with Bloxlink, please try again later.",
-          PARCEL_ERR:
-            "Oops! There was an issue with Parcel, please try again later.",
+          PARCEL_ERR: `The Parcel API returned this error: \`${err.message}\``,
         };
 
         const message =
-          errorMessages[err.message] || "An unknown error occurred.";
+          errorMessages[err.name] || "An unknown error occurred.";
 
         return interaction.editReply({
           embeds: [new ErrorEmbed(message)],
         });
+      } else {
       }
 
       return interaction.editReply({
