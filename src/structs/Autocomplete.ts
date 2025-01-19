@@ -7,7 +7,7 @@ export type AutocompleteHandler = (
 export class AutocompleteComponent<I extends AutocompleteInteraction> {
   public intFn: (interaction: I) => void;
 
-  constructor(public id: string, handler: AutocompleteHandler) {
+  constructor(public id: string | string[], handler: AutocompleteHandler) {
     this.intFn = handler;
   }
 }

@@ -64,9 +64,13 @@ export default onEvent(Events.InteractionCreate, async (interaction) => {
     }
   } else if (interaction.isAutocomplete()) {
     const commandName = interaction.commandName;
-    const autocompleteInt = autocomplete.find(
-      (int) => int.id == interaction.commandId
-    );
+    const autocompleteInt = autocomplete.find((int) => {
+      if (Array.isArray(int.id)) {
+        return int.id.includes(interaction.commandId);
+      }
+      return int.id === interaction.commandId;
+    });
+    
 
     if (!autocompleteInt) {
       logger.error(`Cannot find autocomplete file for: ${commandName}`);

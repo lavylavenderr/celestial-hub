@@ -5,6 +5,7 @@ import cmdStore from "commands";
 import mongoose from "mongoose";
 import { seedDefaults } from "util/configStore";
 import { defaultConfig } from "@constants";
+import "jobs"
 
 export const baseLogger = pino({
   level: Bun.env.LOG_LEVEL,

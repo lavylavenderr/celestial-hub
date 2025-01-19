@@ -1,3 +1,3 @@
-import give from "./give";
+import products from "./products";
 
-export default [give]
+export default [products]

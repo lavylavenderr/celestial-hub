@@ -10,6 +10,7 @@ declare global {
       DISCORD_TOKEN: string;
       DISCORD_ID: string;
       PARCEL_KEY: string;
+      CRONITOR_KEY: string;
       BLOXLINK_KEY: string;
       MONGODB_URL: string;
       PARCEL_ID: string;
