@@ -192,18 +192,15 @@ export default new SlashCommand(
 
       if (err instanceof Error) {
         const errorMessages: Record<string, string> = {
-          BLOXLINK_ERR:
-            "Oops! There was an issue with Bloxlink, please try again later.",
+          BLOXLINK_ERR: `The Bloxlink API returned this error: \`${err.message}\``,
           PARCEL_ERR: `The Parcel API returned this error: \`${err.message}\``,
         };
 
-        const message =
-          errorMessages[err.name] || "An unknown error occurred.";
+        const message = errorMessages[err.name] || "An unknown error occurred.";
 
         return interaction.editReply({
           embeds: [new ErrorEmbed(message)],
         });
-      } else {
       }
 
       return interaction.editReply({

@@ -12,7 +12,10 @@ interface bloxlinkResponse {
   robloxID?: string;
 }
 
-export async function fetchOrCreateUser({ robloxId, discordId }: FunctionParams) {
+export async function fetchOrCreateUser({
+  robloxId,
+  discordId,
+}: FunctionParams) {
   try {
     let userProfile = await user.findOne({
       $or: [{ robloxId: robloxId }, { discordId: discordId }],
@@ -26,6 +29,21 @@ export async function fetchOrCreateUser({ robloxId, discordId }: FunctionParams)
         {
           headers: {
             Authorization: Bun.env.BLOXLINK_KEY,
+          },
+          hooks: {
+            beforeError: [
+              (error) => {
+                const { response } = error;
+                const responseBody = response?.body as any;
+
+                if (responseBody) {
+                  (error.name = "BLOXLINK_ERR"),
+                    (error.message = responseBody.error);
+                }
+
+                return error;
+              },
+            ],
           },
         }
       )
