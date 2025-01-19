@@ -11,9 +11,11 @@ declare global {
       DISCORD_ID: string;
       PARCEL_KEY: string;
       CRONITOR_KEY: string;
+      PARCEL_SECRETKEY: string;
       BLOXLINK_KEY: string;
       MONGODB_URL: string;
       PARCEL_ID: string;
+      ROBLOX_COOKIE: string;
     }
   }
 }

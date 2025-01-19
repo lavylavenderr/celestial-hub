@@ -2,12 +2,14 @@ import { cronitor } from "util/cronitor";
 import cron from "node-cron";
 import got from "got";
 import product from "schemas/product";
+import { ClassicDeveloperProductsApi } from "openblox/classic";
 
 interface ParcelProduct {
   id: string;
   name: string;
   description: string;
   onsale: boolean;
+  developer_product_id: string;
 }
 
 interface ParcelResponse {
@@ -40,21 +42,31 @@ cronitor.schedule("CelestialSyncProducts", "*/10 * * * *", async () => {
     },
   }).json<ParcelResponse>();
 
-  const existingProducts = await product.find({}, { productId: 1 });
-  const existingProductIds = new Set(existingProducts.map((p) => p.productId));
-
-  const newProducts = productList.data.products.filter(
-    (p) => !existingProductIds.has(p.id)
-  );
+  const newProducts = productList.data.products;
 
   if (newProducts.length > 0) {
-    await product.insertMany(
-      newProducts.map((p) => ({
-        productId: p.id,
-        name: p.name,
-        description: p.description,
-        onsale: p.onsale,
-      }))
+    await product.deleteMany({});
+
+    const updatedProducts = await Promise.all(
+      newProducts.map(async (product) => {
+        const { data: obj } =
+          await ClassicDeveloperProductsApi.developerProductCreatorDetails({
+            developerProductProductId: Number(product.developer_product_id),
+          });
+
+        return {
+          productId: product.id,
+          name: product.name,
+          description: product.description,
+          onsale: product.onsale,
+          cost:
+            obj.priceInformation.defaultPriceInRobux == 1
+              ? 0
+              : obj.priceInformation.defaultPriceInRobux,
+        };
+      })
     );
+
+    await product.insertMany(updatedProducts);
   }
 });

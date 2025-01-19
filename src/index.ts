@@ -5,7 +5,8 @@ import cmdStore from "commands";
 import mongoose from "mongoose";
 import { seedDefaults } from "util/configStore";
 import { defaultConfig } from "@constants";
-import "jobs"
+import "jobs";
+import { setConfig } from "openblox/config";
 
 export const baseLogger = pino({
   level: Bun.env.LOG_LEVEL,
@@ -48,16 +49,14 @@ if (
   const rest = new REST().setToken(Bun.env.DISCORD_TOKEN);
 
   const serverSpecificCommands = cmdStore
-    .flatMap(
-      (cmdGroup) => cmdGroup.filter((obj) => obj.schema.serverId)
-    )
+    .flatMap((cmdGroup) => cmdGroup.filter((obj) => obj.schema.serverId))
     .reduce((acc, obj) => {
       const serverId = obj.schema.serverId as string;
 
       if (!acc[serverId]) {
         acc[serverId] = [];
       }
-      
+
       acc[serverId].push(obj.schema.command.toJSON());
       return acc;
     }, {} as Record<string, unknown[]>);
@@ -96,4 +95,9 @@ globalThis.hot_client = client;
 (async function initalize() {
   await mongoose.connect(Bun.env.MONGODB_URL);
   await seedDefaults(defaultConfig);
+
+  setConfig({
+    // @ts-expect-error
+    cookie: Bun.env.ROBLOX_COOKIE,
+  });
 })();

@@ -1,9 +1,26 @@
 import { EmbedBuilder, SlashCommandUserOption } from "discord.js";
 import { ErrorEmbed } from "embeds/response";
+import got from "got";
 import { baseLogger } from "index";
-import { ClassicThumbnailsApi, ClassicUsersApi } from "openblox/classic";
 import { defineSlashCommand, SlashCommand } from "structs/Command";
-import { fetchOrCreateUser, updateWhitelistStatus } from "util/userStore";
+import { fetchOrCreateUser } from "util/userStore";
+
+interface HubData {
+  data: {
+    productsData: {
+      allProducts: {
+        id: string;
+        name: string;
+        description: string;
+        onsale: boolean;
+        developer_product_id: string;
+        playerData: {
+          ownsProduct: true;
+        };
+      }[];
+    };
+  };
+}
 
 const schema = defineSlashCommand({
   name: "profile",
@@ -22,10 +39,33 @@ export default new SlashCommand(schema, async (interaction) => {
     await interaction.deferReply();
 
     const discordUser = interaction.options.getUser("user") ?? interaction.user;
-    let userProfile = await fetchOrCreateUser({ discordId: discordUser.id });
+    const userProfile = await fetchOrCreateUser({ discordId: discordUser.id });
 
-    await updateWhitelistStatus(userProfile.robloxId);
-    userProfile = await fetchOrCreateUser({ discordId: discordUser.id });
+    const hubData = await got(
+      "https://hub.parcelroblox.com/getSession?robloxPlayerId=" +
+        userProfile.robloxId,
+      {
+        headers: {
+          Authorization: Bun.env.PARCEL_SECRETKEY,
+        },
+        responseType: "json",
+        hooks: {
+          beforeError: [
+            (error) => {
+              const { response } = error;
+              const responseBody = response?.body as any;
+
+              if (responseBody) {
+                (error.name = "PARCEL_ERR"),
+                  (error.message = responseBody.message);
+              }
+
+              return error;
+            },
+          ],
+        },
+      }
+    ).json<HubData>();
 
     return interaction.editReply({
       embeds: [
@@ -50,7 +90,10 @@ export default new SlashCommand(schema, async (interaction) => {
             {
               name: "Purchased Products",
               value:
-                userProfile.products.map((x) => x.name).join("\n") || "None",
+                hubData.data.productsData.allProducts
+                  .filter((x) => x.playerData.ownsProduct === true)
+                  .map((x) => x.name)
+                  .join("\n") || "None",
             }
           )
           .setThumbnail(userProfile.thumbnailUrl),

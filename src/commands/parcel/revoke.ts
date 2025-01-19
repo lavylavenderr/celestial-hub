@@ -9,10 +9,14 @@ import { ErrorEmbed } from "embeds/response";
 import got from "got";
 import { baseLogger, client } from "index";
 import requiresRole from "middleware/requiresRole";
-import { ClassicThumbnailsApi, ClassicUsersApi } from "openblox/classic";
-import user from "schemas/user";
 import { defineSlashCommand, SlashCommand } from "structs/Command";
 import { fetchOrCreateUser } from "util/userStore";
+
+interface whitelistResponse {
+  data: {
+    owns_license: boolean;
+  };
+}
 
 const schema = defineSlashCommand({
   name: "revoke",
@@ -79,16 +83,28 @@ export default new SlashCommand(
         robloxId: options.robloxId,
       });
 
-      const { data: userInfo } = await ClassicUsersApi.userInfo({
-        userId: Number(userProfile.robloxId),
-      });
-      const { data: userThumbnail } =
-        await ClassicThumbnailsApi.avatarsHeadshotsThumbnails({
-          userIds: [Number(userProfile.robloxId)],
-          size: "420x420",
-        });
+      const whitelistCheck = await got(
+        `https://v2.parcelroblox.com/whitelist/check/roblox/${userProfile.robloxId}?product_id=${productId}`,
+        {
+          headers: { Authorization: Bun.env.PARCEL_KEY },
+          responseType: "json",
+          hooks: {
+            beforeError: [
+              (error) => {
+                const { response } = error;
+                const responseBody = response?.body as any;
+                if (responseBody) {
+                  error.name = "PARCEL_ERR";
+                  error.message = responseBody.message || "Unknown error";
+                }
+                return error;
+              },
+            ],
+          },
+        }
+      ).json<whitelistResponse>();
 
-      if (!userProfile.products.some((x) => x.productId === productId)) {
+      if (!whitelistCheck.data.owns_license) {
         return interaction.editReply({
           embeds: [
             new ErrorEmbed("Oops! This user does not own this product."),
@@ -122,10 +138,18 @@ export default new SlashCommand(
         },
       });
 
-      await user.updateOne(
-        { robloxId: userProfile.robloxId },
-        { $pull: { products: { productId } } }
-      );      
+      await client.users
+        .send(userProfile.discordId, {
+          embeds: [
+            new EmbedBuilder()
+              .setColor("#cc8eff")
+              .setTitle("Oh no!")
+              .setDescription(
+                `**${productName}** has been revoked from you. Please open a ticket for further information.`
+              ),
+          ],
+        })
+        .catch();
 
       await parcelLogs.send({
         embeds: [
@@ -140,36 +164,21 @@ export default new SlashCommand(
               },
               {
                 name: "Revokee",
-                value: `${userInfo.name} (${userProfile.robloxId})`,
+                value: `${userProfile.robloxUsername} (${userProfile.robloxId})`,
               },
               {
                 name: "Reason",
                 value: options.reason ?? "No Reason Provided",
               }
             )
-            .setThumbnail(
-              userThumbnail[Number(userProfile.robloxId)]?.imageUrl!
-            ),
+            .setThumbnail(userProfile.thumbnailUrl),
         ],
       });
-
-      await client.users
-        .send(userProfile.discordId, {
-          embeds: [
-            new EmbedBuilder()
-              .setColor("#cc8eff")
-              .setTitle("Oh no!")
-              .setDescription(
-                `**${productName}** has been revoked from you. Please open a ticket for further information.`
-              ),
-          ],
-        })
-        .catch();
 
       return interaction.editReply({
         embeds: [
           new ErrorEmbed(
-            `I've successfully revoked **${productName}** from **${userInfo.name}** (${userProfile.robloxId})`
+            `I've successfully revoked **${productName}** from **${userProfile.robloxUsername}** (${userProfile.robloxId})`
           ),
         ],
       });

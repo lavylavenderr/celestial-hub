@@ -4,14 +4,16 @@ interface IProduct {
   name: string;
   productId: string;
   description: string;
-  onsale: true;
+  onsale: boolean;
+  cost?: number;
 }
 
 const productSchema = new Schema<IProduct>({
     name: Schema.Types.String,
     productId: Schema.Types.String,
     description: Schema.Types.String,
-    onsale: Schema.Types.Boolean
+    onsale: Schema.Types.Boolean,
+    cost: Schema.Types.Number
 });
 
 const product = model<IProduct>("Product", productSchema)

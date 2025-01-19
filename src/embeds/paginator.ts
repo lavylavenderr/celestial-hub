@@ -6,7 +6,6 @@ import {
   ButtonStyle,
   InteractionResponse,
   type ChatInputCommandInteraction,
-  type Interaction,
   ButtonInteraction,
   MessageFlags,
 } from "discord.js";
@@ -39,10 +38,8 @@ export default class PaginatorSession {
     this.timeout = options.timeout || 210;
 
     this.callbackMap = {
-      "<<": this.firstPage.bind(this),
-      "<": this.previousPage.bind(this),
-      ">": this.nextPage.bind(this),
-      ">>": this.lastPage.bind(this),
+      Back: this.previousPage.bind(this),
+      Next: this.nextPage.bind(this),
     };
   }
 
@@ -50,26 +47,19 @@ export default class PaginatorSession {
     const isFirstPage = this.currentPage === 0;
     const isLastPage = this.currentPage === this.pages.length - 1;
 
-    this.buttonsMap["<<"]?.setDisabled(isFirstPage);
-    this.buttonsMap["<"]?.setDisabled(isFirstPage);
-    this.buttonsMap[">>"]?.setDisabled(isLastPage);
-    this.buttonsMap[">"]?.setDisabled(isLastPage);
+    this.buttonsMap["Back"]?.setDisabled(isFirstPage);
+    this.buttonsMap["Next"]?.setDisabled(isLastPage);
   }
 
   private createView(): ActionRowBuilder<ButtonBuilder> {
     const row = new ActionRowBuilder<ButtonBuilder>();
 
     for (const label of Object.keys(this.callbackMap)) {
-      if (this.pages.length <= 2 && ["<<", ">>"].includes(label)) continue;
-
-      const style = ["<<", ">>"].includes(label)
-        ? ButtonStyle.Secondary
-        : ButtonStyle.Primary;
-
       const button = new ButtonBuilder()
         .setCustomId(label)
         .setLabel(label)
-        .setStyle(style);
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(label === "Back" ? true : false);
 
       this.buttonsMap[label] = button;
       row.addComponents(button);
@@ -115,20 +105,12 @@ export default class PaginatorSession {
     }
   }
 
-  private firstPage() {
-    return 0;
-  }
-
-  private lastPage() {
-    return this.pages.length - 1;
-  }
-
   private nextPage() {
-    return Math.min(this.currentPage + 1, this.lastPage());
+    return Math.min(this.currentPage + 1, this.pages.length - 1);
   }
 
   private previousPage() {
-    return Math.max(this.currentPage - 1, this.firstPage());
+    return Math.max(this.currentPage - 1, 0);
   }
 
   async run() {
@@ -144,14 +126,13 @@ export default class PaginatorSession {
       if (interaction.user.id !== this.initiator) {
         return interaction.reply({
           content: "This isn't your interaction!",
-          flags: MessageFlags.Ephemeral
+          flags: MessageFlags.Ephemeral,
         });
       }
 
       const action = this.callbackMap[interaction.customId];
 
       if (action) {
-        // await interaction.deleteReply()
         await this.showPage(action());
         await interaction.update({
           embeds: [this.pages[this.currentPage]],

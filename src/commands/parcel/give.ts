@@ -11,11 +11,15 @@ import { ErrorEmbed } from "embeds/response";
 import got from "got";
 import { baseLogger, client } from "index";
 import requiresRole from "middleware/requiresRole";
-import { ClassicThumbnailsApi, ClassicUsersApi } from "openblox/classic";
-import user from "schemas/user";
 import { defineSlashCommand, SlashCommand } from "structs/Command";
 import actionRow from "util/actionRow";
 import { fetchOrCreateUser } from "util/userStore";
+
+interface whitelistResponse {
+  data: {
+    owns_license: boolean;
+  };
+}
 
 const schema = defineSlashCommand({
   name: "give",
@@ -82,16 +86,28 @@ export default new SlashCommand(
         robloxId: options.robloxId,
       });
 
-      const { data: userInfo } = await ClassicUsersApi.userInfo({
-        userId: Number(userProfile.robloxId),
-      });
-      const { data: userThumbnail } =
-        await ClassicThumbnailsApi.avatarsHeadshotsThumbnails({
-          userIds: [Number(userProfile.robloxId)],
-          size: "420x420",
-        });
+      const whitelistCheck = await got(
+        `https://v2.parcelroblox.com/whitelist/check/roblox/${userProfile.robloxId}?product_id=${productId}`,
+        {
+          headers: { Authorization: Bun.env.PARCEL_KEY },
+          responseType: "json",
+          hooks: {
+            beforeError: [
+              (error) => {
+                const { response } = error;
+                const responseBody = response?.body as any;
+                if (responseBody) {
+                  error.name = "PARCEL_ERR";
+                  error.message = responseBody.message || "Unknown error";
+                }
+                return error;
+              },
+            ],
+          },
+        }
+      ).json<whitelistResponse>();
 
-      if (userProfile.products.some((x) => x.productId === productId)) {
+      if (whitelistCheck.data.owns_license) {
         return interaction.editReply({
           embeds: [
             new ErrorEmbed("Oops! This user already owns this product."),
@@ -125,12 +141,6 @@ export default new SlashCommand(
         },
       });
 
-      userProfile.products.push({ name: productName, productId });
-      await user.updateOne(
-        { robloxId: userProfile.robloxId },
-        { $set: { products: userProfile.products } }
-      );
-
       await parcelLogs.send({
         embeds: [
           new EmbedBuilder()
@@ -144,16 +154,14 @@ export default new SlashCommand(
               },
               {
                 name: "Receiver",
-                value: `${userInfo.name} (${userProfile.robloxId})`,
+                value: `${userProfile.robloxUsername} (${userProfile.robloxId})`,
               },
               {
                 name: "Reason",
                 value: options.reason ?? "No Reason Provided",
               }
             )
-            .setThumbnail(
-              userThumbnail[Number(userProfile.robloxId)]?.imageUrl!
-            ),
+            .setThumbnail(userProfile.thumbnailUrl),
         ],
       });
 
@@ -183,7 +191,7 @@ export default new SlashCommand(
       return interaction.editReply({
         embeds: [
           new ErrorEmbed(
-            `I've successfully given **${productName}** to **${userInfo.name}** (${userProfile.robloxId})`
+            `I've successfully given **${productName}** to **${userProfile.robloxUsername}** (${userProfile.robloxId})`
           ),
         ],
       });
