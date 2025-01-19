@@ -10,6 +10,9 @@ interface IUserProfile {
   discordId: string;
   balance: number;
   products: IProductInfo[];
+  lastRefreshed?: Date;
+  thumbnailUrl: string;
+  robloxUsername: string;
 }
 
 const productSchema = new Schema<IProductInfo>({
@@ -18,10 +21,13 @@ const productSchema = new Schema<IProductInfo>({
 });
 
 const userSchema = new Schema<IUserProfile>({
+  robloxUsername: Schema.Types.String,
   robloxId: Schema.Types.String,
   discordId: Schema.Types.String,
   balance: Schema.Types.Number,
   products: [productSchema],
+  lastRefreshed: Schema.Types.Date,
+  thumbnailUrl: Schema.Types.String
 });
 
 const user = model<IUserProfile>("User", userSchema);

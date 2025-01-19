@@ -27,14 +27,6 @@ export default new SlashCommand(schema, async (interaction) => {
     await updateWhitelistStatus(userProfile.robloxId);
     userProfile = await fetchOrCreateUser({ discordId: discordUser.id });
 
-    const [userInfo, userThumbnail] = await Promise.all([
-      ClassicUsersApi.userInfo({ userId: Number(userProfile.robloxId) }),
-      ClassicThumbnailsApi.avatarsHeadshotsThumbnails({
-        userIds: [Number(userProfile.robloxId)],
-        size: "420x420",
-      }),
-    ]);
-
     return interaction.editReply({
       embeds: [
         new EmbedBuilder()
@@ -43,7 +35,7 @@ export default new SlashCommand(schema, async (interaction) => {
           .addFields(
             {
               name: "Roblox",
-              value: `${userInfo.data.name}\n\`${userInfo.data.id}\``,
+              value: `${userProfile.robloxUsername}\n\`${userProfile.robloxId}\``,
               inline: true,
             },
             {
@@ -61,9 +53,7 @@ export default new SlashCommand(schema, async (interaction) => {
                 userProfile.products.map((x) => x.name).join("\n") || "None",
             }
           )
-          .setThumbnail(
-            userThumbnail.data[Number(userProfile.robloxId)]?.imageUrl ?? ""
-          ),
+          .setThumbnail(userProfile.thumbnailUrl),
       ],
     });
   } catch (err) {

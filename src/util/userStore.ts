@@ -1,4 +1,6 @@
+import { isAfter, subMinutes } from "date-fns";
 import got from "got";
+import { ClassicThumbnailsApi, ClassicUsersApi } from "openblox/classic";
 import product from "schemas/product";
 import user from "schemas/user";
 
@@ -54,17 +56,31 @@ export async function fetchOrCreateUser({
       }
     ).json<bloxlinkResponse>();
 
+    const [userInfo, userThumbnail] = await Promise.all([
+      ClassicUsersApi.userInfo({
+        userId: Number(robloxId ? robloxId : bloxlinkLookup.robloxID),
+      }),
+      ClassicThumbnailsApi.avatarsHeadshotsThumbnails({
+        userIds: [Number(robloxId ? robloxId : bloxlinkLookup.robloxID)],
+        size: "420x420",
+      }),
+    ]);
+
     userProfile = await user.create({
       robloxId: robloxId ? robloxId : bloxlinkLookup.robloxID,
       discordId: discordId ? discordId : bloxlinkLookup.discordIDs![0],
       balance: 0,
       products: [],
+      robloxUsername: userInfo.data.name,
+      thumbnailUrl:
+        userThumbnail.data[
+          Number(robloxId ? robloxId : bloxlinkLookup.robloxID)
+        ]?.imageUrl,
     });
 
     await updateWhitelistStatus(userProfile.robloxId);
   }
 
-  await updateWhitelistStatus(userProfile.robloxId);
   return userProfile.toObject();
 }
 
@@ -72,7 +88,11 @@ export async function updateWhitelistStatus(robloxId: string) {
   const productList = await product.find({}, { _id: 0, productId: 1, name: 1 });
   const userProfile = await user.findOne({ robloxId });
 
-  if (!userProfile) {
+  if (
+    !userProfile ||
+    (userProfile.lastRefreshed &&
+      !isAfter(new Date(userProfile.lastRefreshed), subMinutes(new Date(), 10)))
+  ) {
     return;
   }
 
@@ -117,6 +137,7 @@ export async function updateWhitelistStatus(robloxId: string) {
 
   if (toUpdate.length > 0) {
     userProfile.products.push(...toUpdate);
+    userProfile.lastRefreshed = new Date();
     await userProfile.save();
   }
 }
