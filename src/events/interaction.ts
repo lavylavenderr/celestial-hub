@@ -85,6 +85,15 @@ export default onEvent(Events.InteractionCreate, async (interaction) => {
     }
   } else if (interaction.isMessageComponent()) {
     const customId = interaction.customId;
+
+    if (
+      interaction.customId === "Back" ||
+      interaction.customId === "Next" ||
+      interaction.customId === "stop"
+    ) {
+      return;
+    }
+
     const component = components.find((component) => component.id == customId);
 
     if (!component) {
