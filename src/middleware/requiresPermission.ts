@@ -1,8 +1,12 @@
-import { Messages } from '@constants';
-import { ChatInputCommandInteraction, PermissionFlagsBits, MessageFlags } from 'discord.js';
-import { ErrorEmbed } from 'embeds/response';
-import type { ReplyableInteractionMiddlewareFn } from 'types';
-import hasPermission from 'util/hasPermission';
+import { Messages } from "@constants";
+import {
+  ChatInputCommandInteraction,
+  PermissionFlagsBits,
+  MessageFlags,
+} from "discord.js";
+import { ErrorEmbed } from "embeds/response";
+import type { ReplyableInteractionMiddlewareFn } from "types";
+import hasPermission from "util/hasPermission";
 
 export default function requiresPermission<
   T extends keyof typeof PermissionFlagsBits
@@ -21,8 +25,7 @@ export default function requiresPermission<
         flags: MessageFlags.Ephemeral,
         embeds: [
           new ErrorEmbed(
-            'Missing Permissions',
-            `${Messages.MISSING_PERMISSION}\n\`${permissions.join(', ')}\``
+            `${Messages.MISSING_PERMISSION}\n\`${permissions.join(", ")}\``
           ),
         ],
       });

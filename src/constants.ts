@@ -38,6 +38,14 @@ export enum Colors {
 }
 
 /**
+ * Discord API Errors
+ */
+export const DiscordErrorCodes: Record<number, string> = {
+  50001: "Oh no! I'm missing the required permissions for a specific channel. Please contact the developer to fix this.",
+  50013: "Aw geez.. I don't have the required permissions to complete this...",
+};
+
+/**
  * Config Defaults
  */
 export const defaultConfig = {};
