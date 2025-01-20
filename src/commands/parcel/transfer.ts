@@ -1,7 +1,5 @@
 import { Roles } from "@constants";
 import {
-  ButtonBuilder,
-  ButtonStyle,
   EmbedBuilder,
   SlashCommandStringOption,
   SlashCommandUserOption,
@@ -11,10 +9,7 @@ import { ErrorEmbed } from "embeds/response";
 import got from "got";
 import { baseLogger, client } from "index";
 import requiresRole from "middleware/requiresRole";
-import trial from "schemas/trial";
 import { defineSlashCommand, SlashCommand } from "structs/Command";
-import actionRow from "util/actionRow";
-import { ShortTime } from "util/time";
 import { fetchOrCreateUser } from "util/userStore";
 
 interface whitelistResponse {
@@ -24,8 +19,8 @@ interface whitelistResponse {
 }
 
 const schema = defineSlashCommand({
-  name: "trial",
-  description: "Give a product to the requested user for a limited time",
+  name: "transfer",
+  description: "Transfer a product from a player to another",
   serverOnly: true,
   serverId: "1108189414351450254",
   options: [
@@ -34,16 +29,14 @@ const schema = defineSlashCommand({
       .setDescription("The requested product")
       .setRequired(true)
       .setAutocomplete(true),
-    new SlashCommandStringOption()
-      .setName("length")
-      .setDescription("How long (in days) will this trial last for?")
+    new SlashCommandUserOption()
+      .setName("sender")
+      .setDescription("Pick the user/insert an ID")
       .setRequired(true),
     new SlashCommandUserOption()
-      .setName("discordid")
-      .setDescription("Enter the Discord ID of the user"),
-    new SlashCommandStringOption()
-      .setName("robloxid")
-      .setDescription("Enter the Roblox ID of the user"),
+      .setName("recipient")
+      .setDescription("Pick the user/insert an ID")
+      .setRequired(true),
   ],
 });
 
@@ -54,31 +47,14 @@ export default new SlashCommand(
       await interaction.deferReply();
 
       const options = {
-        product: interaction.options.getString("product", true),
-        discordId: interaction.options.getUser("discordid"),
-        robloxId: interaction.options.getString("robloxid"),
-        length: new ShortTime(
-          interaction.options.getString("length", true) + " days"
-        ),
+        product: interaction.options.getString("product"),
+        fromUser: interaction.options.getUser("sender"),
+        toUser: interaction.options.getUser("recipient"),
       };
 
-      if (options.discordId && options.robloxId) {
+      if (!options.fromUser || !options.toUser) {
         return interaction.editReply({
-          embeds: [
-            new ErrorEmbed(
-              "Oops! You cannot provide a Roblox ID and a Discord ID, please only provide one."
-            ),
-          ],
-        });
-      }
-
-      if (!options.discordId && !options.robloxId) {
-        return interaction.editReply({
-          embeds: [
-            new ErrorEmbed(
-              "Oops! You did not provide a Roblox ID or a Discord ID."
-            ),
-          ],
+          embeds: [new ErrorEmbed("Oops! You did not provide both users.")],
         });
       }
 
@@ -86,13 +62,16 @@ export default new SlashCommand(
         "1280065540555145267"
       )) as GuildTextBasedChannel;
       const [productName, productId] = options.product!.split("|");
-      const userProfile = await fetchOrCreateUser({
-        discordId: options.discordId?.id,
-        robloxId: options.robloxId,
+
+      const fromUserProfile = await fetchOrCreateUser({
+        discordId: options.fromUser.id,
+      });
+      const toUserProfile = await fetchOrCreateUser({
+        discordId: options.toUser.id,
       });
 
       const whitelistCheck = await got(
-        `https://v2.parcelroblox.com/whitelist/check/roblox/${userProfile.robloxId}?product_id=${productId}`,
+        `https://v2.parcelroblox.com/whitelist/check/roblox/${fromUserProfile.robloxId}?product_id=${productId}`,
         {
           headers: { Authorization: Bun.env.PARCEL_KEY },
           responseType: "json",
@@ -112,28 +91,57 @@ export default new SlashCommand(
         }
       ).json<whitelistResponse>();
 
-      if (whitelistCheck.data.owns_license) {
+      if (!whitelistCheck.data.owns_license) {
         return interaction.editReply({
           embeds: [
-            new ErrorEmbed("Oops! This user already owns this product."),
+            new ErrorEmbed("Oops! The from user does not own this product."),
           ],
         });
       }
 
-      await trial.create({
-        discordId: userProfile.discordId,
-        productId: productId,
-        endDate: options.length.dt,
-      });
+      const whitelistCheck2 = await got(
+        `https://v2.parcelroblox.com/whitelist/check/roblox/${toUserProfile.robloxId}?product_id=${productId}`,
+        {
+          headers: { Authorization: Bun.env.PARCEL_KEY },
+          responseType: "json",
+          hooks: {
+            beforeError: [
+              (error) => {
+                const { response } = error;
+                const responseBody = response?.body as any;
+                if (responseBody) {
+                  error.name = "PARCEL_ERR";
+                  error.message = responseBody.message || "Unknown error";
+                }
+                return error;
+              },
+            ],
+          },
+        }
+      ).json<whitelistResponse>();
 
-      await got("https://v2.parcelroblox.com/whitelist/assign", {
-        method: "POST",
+      if (whitelistCheck2.data.owns_license) {
+        return interaction.editReply({
+          embeds: [
+            new ErrorEmbed("Oops! The recieving user does own this product."),
+          ],
+        });
+      }
+
+      await got("https://v2.parcelroblox.com/whitelist/transfer", {
+        method: "PATCH",
         headers: { Authorization: Bun.env.PARCEL_KEY },
         responseType: "json",
         json: {
           product_id: productId,
-          userid: userProfile.robloxId,
-          userid_type: "roblox",
+          sender: {
+            userid: fromUserProfile.robloxId,
+            userid_type: "roblox",
+          },
+          recipient: {
+            userid: toUserProfile.robloxId,
+            userid_type: "roblox",
+          },
         },
         hooks: {
           beforeError: [
@@ -156,7 +164,7 @@ export default new SlashCommand(
         embeds: [
           new EmbedBuilder()
             .setColor("#cc8eff")
-            .setTitle("Product Trial Given")
+            .setTitle("Product Transferred")
             .setDescription("Staff Member: <@" + interaction.user.id + ">")
             .addFields(
               {
@@ -165,51 +173,21 @@ export default new SlashCommand(
               },
               {
                 name: "Receiver",
-                value: `${userProfile.robloxUsername} (${userProfile.robloxId})`,
+                value: `${fromUserProfile.robloxUsername}\n(${fromUserProfile.robloxId})`,
               },
               {
-                name: "Length",
-                value: interaction.options.getString("length", true).replace("days", "") + " days",
+                name: "Recipient",
+                value: `${toUserProfile.robloxUsername}\n(${toUserProfile.robloxId})`,
               }
             )
-            .setThumbnail(userProfile.thumbnailUrl),
+            .setThumbnail(toUserProfile.thumbnailUrl),
         ],
       });
-
-      await client.users
-        .send(userProfile.discordId, {
-          embeds: [
-            new EmbedBuilder()
-              .setColor("#cc8eff")
-              .setTitle("Tada! You've received your asset!")
-              .setDescription(
-                `You've received **${productName}**. You can download it below!`
-              ),
-          ],
-          components: [
-            actionRow([
-              new ButtonBuilder()
-                .setLabel("Download the Product")
-                .setStyle(ButtonStyle.Link)
-                .setURL(
-                  `https://my.parcelroblox.com/retrieve/${Bun.env.PARCEL_ID}/${productId}`
-                ),
-            ]),
-          ],
-        })
-        .catch((err) => err);
 
       return interaction.editReply({
         embeds: [
           new ErrorEmbed(
-            `I've successfully given **${productName}** to **${
-              userProfile.robloxUsername
-            }** (${
-              userProfile.robloxId
-            }) as part of a trial period that will last **${interaction.options.getString(
-              "length",
-              true
-            )} days** as requested.`
+            `I've successfully transferred **${productName}** from **${fromUserProfile.robloxUsername}** (${fromUserProfile.robloxId}) to **${toUserProfile.robloxUsername}** (${toUserProfile.robloxId}) as requested.`
           ),
         ],
       });
