@@ -96,7 +96,7 @@ export default new SlashCommand(schema, async (interaction) => {
                   .join("\n") || "None",
             }
           )
-          .setThumbnail(userProfile.thumbnailUrl),
+          .setThumbnail(userProfile.thumbnailUrl ?? interaction.user.avatarURL()!),
       ],
     });
   } catch (err) {
