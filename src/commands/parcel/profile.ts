@@ -1,7 +1,7 @@
 import { EmbedBuilder, SlashCommandUserOption } from "discord.js";
 import { ErrorEmbed } from "embeds/response";
 import got from "got";
-import { baseLogger } from "index";
+import { baseLogger, client } from "index";
 import { defineSlashCommand, SlashCommand } from "structs/Command";
 import { fetchOrCreateUser } from "util/userStore";
 
@@ -96,7 +96,7 @@ export default new SlashCommand(schema, async (interaction) => {
                   .join("\n") || "None",
             }
           )
-          .setThumbnail(userProfile.thumbnailUrl ?? interaction.user.avatarURL()!),
+          .setThumbnail(userProfile.thumbnailUrl || client.user.avatarURL()!),
       ],
     });
   } catch (err) {

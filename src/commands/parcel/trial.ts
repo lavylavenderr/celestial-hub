@@ -172,7 +172,7 @@ export default new SlashCommand(
                 value: interaction.options.getString("length", true).replace("days", "") + " days",
               }
             )
-            .setThumbnail(userProfile.thumbnailUrl),
+            .setThumbnail(userProfile.thumbnailUrl || client.user.avatarURL()!),
         ],
       });
 

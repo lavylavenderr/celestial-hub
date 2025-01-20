@@ -168,7 +168,7 @@ export default new SlashCommand(
                 value: options.reason ?? "No Reason Provided",
               }
             )
-            .setThumbnail(userProfile.thumbnailUrl),
+            .setThumbnail(userProfile.thumbnailUrl || client.user.avatarURL()!),
         ],
       });
 

@@ -142,7 +142,7 @@ server.post(
                 inline: true,
               }
             )
-            .setThumbnail(userProfile.thumbnailUrl)
+            .setThumbnail(userProfile.thumbnailUrl || client.user.avatarURL()!)
             .setColor("Purple")
             .setTimestamp(),
         ],

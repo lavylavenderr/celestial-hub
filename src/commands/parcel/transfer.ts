@@ -180,7 +180,7 @@ export default new SlashCommand(
                 value: `${toUserProfile.robloxUsername}\n(${toUserProfile.robloxId})`,
               }
             )
-            .setThumbnail(toUserProfile.thumbnailUrl),
+            .setThumbnail(toUserProfile.thumbnailUrl || client.user.avatarURL()!),
         ],
       });
 
