@@ -71,6 +71,7 @@ server.post(
           message: "Invalid Request",
           status: "INVLD_REQ",
         });
+        return;
       }
 
       const purchaseLogs = (await client.channels.fetch(
@@ -144,6 +145,7 @@ server.post(
         message: "Purchase Logged",
         status: "OK",
       });
+      return;
     } catch (err) {
       if (err instanceof Error) {
         const errorMessages: Record<string, string> = {
