@@ -17,7 +17,7 @@ interface ParcelResponse {
 }
 
 export default new AutocompleteComponent(
-  ["1330445963705454634", "1330474332446523444"],
+  ["1330445963705454634", "1330474332446523444", '1330807891699175485', '1330829533342994503', '1330843501776076840'],
   async (interaction) => {
     const productList = await got("https://v2.parcelroblox.com/products/all", {
       method: "GET",

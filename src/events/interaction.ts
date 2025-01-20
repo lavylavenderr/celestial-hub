@@ -1,7 +1,9 @@
 import { Messages } from "@constants";
 import autocomplete from "autocomplete";
 import commands from "commands";
+import components from "commands/components";
 import {
+  ButtonInteraction,
   ChatInputCommandInteraction,
   Events,
   MessageFlags,
@@ -70,7 +72,6 @@ export default onEvent(Events.InteractionCreate, async (interaction) => {
       }
       return int.id === interaction.commandId;
     });
-    
 
     if (!autocompleteInt) {
       logger.error(`Cannot find autocomplete file for: ${commandName}`);
@@ -79,6 +80,27 @@ export default onEvent(Events.InteractionCreate, async (interaction) => {
 
     try {
       autocompleteInt.intFn(interaction);
+    } catch (e) {
+      logger.error(e);
+    }
+  } else if (interaction.isMessageComponent()) {
+    const customId = interaction.customId;
+    const component = components.find((component) => component.id == customId);
+
+    if (!component) {
+      logger.error(`Unknown component with custom_id ${customId}!`);
+      return interaction.reply({
+        ephemeral: true,
+        embeds: [ErrorEmbed.unrecoverable(Messages.UNKNOWN_COMPONENT)],
+      });
+    }
+
+    logger.debug(
+      `Running component ${customId} for user ${interaction.user.tag}`
+    );
+
+    try {
+      component.handler(interaction as ButtonInteraction<"cached">);
     } catch (e) {
       logger.error(e);
     }

@@ -9,6 +9,7 @@ import { ErrorEmbed } from "embeds/response";
 import got from "got";
 import { baseLogger, client } from "index";
 import requiresRole from "middleware/requiresRole";
+import trial from "schemas/trial";
 import { defineSlashCommand, SlashCommand } from "structs/Command";
 import { fetchOrCreateUser } from "util/userStore";
 
@@ -138,6 +139,12 @@ export default new SlashCommand(
         },
       });
 
+      const existingTrial = await trial.findOne({
+        productId: productId,
+        discordId: interaction.user.id,
+      });
+      if (existingTrial) await trial.deleteOne({ _id: existingTrial._id });
+
       await client.users
         .send(userProfile.discordId, {
           embeds: [
@@ -149,7 +156,7 @@ export default new SlashCommand(
               ),
           ],
         })
-        .catch();
+        .catch((err) => err);
 
       await parcelLogs.send({
         embeds: [

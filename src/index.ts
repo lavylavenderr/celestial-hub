@@ -5,8 +5,10 @@ import cmdStore from "commands";
 import mongoose from "mongoose";
 import { seedDefaults } from "util/configStore";
 import { defaultConfig } from "@constants";
-import "jobs";
 import { setConfig } from "openblox/config";
+
+import "jobs";
+import "util/server"
 
 export const baseLogger = pino({
   level: Bun.env.LOG_LEVEL,

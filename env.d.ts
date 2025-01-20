@@ -16,6 +16,8 @@ declare global {
       MONGODB_URL: string;
       PARCEL_ID: string;
       ROBLOX_COOKIE: string;
+      AUTHORIZATION_KEY: string;
+      PORT: string;
     }
   }
 }

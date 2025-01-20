@@ -1,7 +1,5 @@
-import { isAfter, subMinutes } from "date-fns";
 import got from "got";
 import { ClassicThumbnailsApi, ClassicUsersApi } from "openblox/classic";
-import product from "schemas/product";
 import user from "schemas/user";
 
 interface FunctionParams {

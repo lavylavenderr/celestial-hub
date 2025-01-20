@@ -85,7 +85,7 @@ export default new SlashCommand(schema, async (interaction) => {
             },
             {
               name: "Balance",
-              value: `$${userProfile.balance}`,
+              value: `$${userProfile.balance.toFixed(2)}`,
             },
             {
               name: "Purchased Products",

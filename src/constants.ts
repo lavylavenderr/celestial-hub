@@ -43,6 +43,7 @@ export enum Colors {
 export const DiscordErrorCodes: Record<number, string> = {
   50001: "Oh no! I'm missing the required permissions for a specific channel. Please contact the developer to fix this.",
   50013: "Aw geez.. I don't have the required permissions to complete this...",
+  50007: "Oh no! Your DMs are closed, thus we are unable to send you your product."
 };
 
 /**
