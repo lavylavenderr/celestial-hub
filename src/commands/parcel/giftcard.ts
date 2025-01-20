@@ -8,7 +8,6 @@ import {
   type GuildTextBasedChannel,
 } from "discord.js";
 import { ErrorEmbed } from "embeds/response";
-import interaction from "events/interaction";
 import { baseLogger, client } from "index";
 import requiresRole from "middleware/requiresRole";
 import { customAlphabet } from "nanoid";
@@ -110,14 +109,6 @@ export default new SlashCommand(schema)
         const giftCardAmount = interaction.options.getNumber("amount", true);
         const giftCardCode = await generateUniqueGiftCardCode();
 
-        const splicedArray = giftCardCode.split("-");
-
-        delete splicedArray[2];
-        delete splicedArray[3];
-
-        splicedArray.push("XXXX", "XXXX");
-
-        const censoredCode = splicedArray.filter((x) => x).join("-");
         const giftCardLogs = (await client.channels.fetch(
           "1305375929589039246"
         )) as GuildTextBasedChannel;
@@ -136,7 +127,7 @@ export default new SlashCommand(schema)
               .addFields(
                 {
                   name: "Code",
-                  value: censoredCode,
+                  value: giftCardCode,
                 },
                 {
                   name: "Value",
@@ -254,9 +245,6 @@ export default new SlashCommand(schema)
         ],
       });
 
-    userProfile.balance += requestedGiftcard.amount;
-    requestedGiftcard.redeemed = true;
-
     await user.findOneAndUpdate(
       {
         discordId: interaction.user.id,
@@ -276,7 +264,8 @@ export default new SlashCommand(schema)
           .setColor("#cc8eff")
           .setTitle("Giftcard Redeemed")
           .setDescription(
-            `You've successfully redeemed \`${giftCardCode}\` and it has been credited to your balance. Your balance is now **$${userProfile.balance}**.`
+            `You've successfully redeemed \`${giftCardCode}\` and it has been credited to your balance. Your balance is now **$${(userProfile.balance +=
+              requestedGiftcard.amount)}**.`
           ),
       ],
     });
