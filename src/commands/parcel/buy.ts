@@ -36,7 +36,7 @@ export default new SlashCommand(schema, async (interaction) => {
     });
 
   const robloxButton = new ButtonBuilder()
-    .setLabel("Buy with Robux")
+    .setLabel(productInfo.cost === 0 ? "Claim on Roblox" : "Buy with Robux")
     .setURL("https://www.roblox.com/games/90645336814376/Celestial-Hub")
     .setStyle(ButtonStyle.Link);
   return interaction.reply({

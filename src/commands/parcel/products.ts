@@ -30,7 +30,16 @@ export default new SlashCommand(schema, async (interaction) => {
           .map((x) =>
             x.cost === 0
               ? x.name + " · " + "Free!"
-              : x.name + " · " + x.cost + " <:Robux:1304895839528947804>"
+              : x.name +
+                " · " +
+                x.cost +
+                " <:Robux:1304895839528947804> / " +
+                (String(x.cost).length === 4
+                  ? String(x.cost).slice(0, 2) + "." + String(x.cost).slice(2)
+                  : String(x.cost).length === 3
+                  ? String(x.cost).slice(0, 1) + "." + String(x.cost).slice(1)
+                  : "0." + String(x.cost)) +
+                " <:celestialicon:1304899459712286831>"
           )
           .join("\n"),
       })
