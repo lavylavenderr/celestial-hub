@@ -8,15 +8,18 @@ import {
   type GuildTextBasedChannel,
 } from "discord.js";
 import { ErrorEmbed } from "embeds/response";
+import interaction from "events/interaction";
 import { baseLogger, client } from "index";
 import requiresRole from "middleware/requiresRole";
 import { customAlphabet } from "nanoid";
 import giftcard from "schemas/giftcard";
+import user from "schemas/user";
 import {
   defineSlashCommand,
   defineSlashSubcommand,
   SlashCommand,
 } from "structs/Command";
+import { fetchOrCreateUser } from "util/userStore";
 
 const schema = defineSlashCommand({
   name: "giftcard",
@@ -59,6 +62,16 @@ const schema = defineSlashCommand({
     defineSlashSubcommand({
       name: "destroy",
       description: "Destroy a giftcard",
+      options: [
+        new SlashCommandStringOption()
+          .setName("code")
+          .setDescription("What is the giftcard code?")
+          .setRequired(true),
+      ],
+    }),
+    defineSlashSubcommand({
+      name: "redeem",
+      description: "Redeem a giftcard",
       options: [
         new SlashCommandStringOption()
           .setName("code")
@@ -220,4 +233,51 @@ export default new SlashCommand(schema)
       });
     },
     [requiresRole(Roles.BoardOfDirectors)]
-  );
+  )
+  .subcommand("redeem", async (interaction) => {
+    await interaction.deferReply();
+
+    const giftCardCode = interaction.options.getString("code", true);
+    const requestedGiftcard = await giftcard.findOne({ code: giftCardCode });
+    const userProfile = await fetchOrCreateUser({
+      discordId: interaction.user.id,
+    });
+
+    if (!requestedGiftcard || requestedGiftcard.redeemed)
+      return interaction.editReply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor("#cc8eff")
+            .setDescription(
+              `Uh oh! The provided giftcard doesn't exist or already has been claimed.`
+            ),
+        ],
+      });
+
+    userProfile.balance += requestedGiftcard.amount;
+    requestedGiftcard.redeemed = true;
+
+    await user.findOneAndUpdate(
+      {
+        discordId: interaction.user.id,
+      },
+      { $inc: { balance: requestedGiftcard.amount } }
+    );
+    await giftcard.findOneAndUpdate(
+      {
+        code: giftCardCode,
+      },
+      { $set: { redeemed: true } }
+    );
+
+    return interaction.editReply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor("#cc8eff")
+          .setTitle("Giftcard Redeemed")
+          .setDescription(
+            `You've successfully redeemed \`${giftCardCode}\` and it has been credited to your balance. Your balance is now **$${userProfile.balance}**.`
+          ),
+      ],
+    });
+  });
