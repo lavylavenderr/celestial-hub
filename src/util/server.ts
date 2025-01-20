@@ -23,12 +23,14 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
 
       status: "401",
     });
+    return;
   } else {
     if (authorizationheader !== Bun.env.AUTHORIZATION_KEY) {
       res.status(401).json({
         message: "Unauthorized",
         status: "401",
       });
+      return;
     } else {
       next();
     }
@@ -107,37 +109,42 @@ server.post(
 
       await purchaseLogs.send({
         embeds: [
-          new EmbedBuilder().setTitle("New Purchase").addFields(
-            {
-              name: "Product Name",
-              value: requestedProduct.data.name,
-              inline: true,
-            },
-            {
-              name: "Method",
-              value: `\`${req.body.method}\``,
-              inline: true,
-            },
-            {
-              name: "Sale Type",
-              value: `\`Normal\``,
-              inline: true,
-            },
-            {
-              name: "Roblox",
-              value: `${userProfile.robloxUsername}\n\`${userProfile.robloxId}\``,
-              inline: true,
-            },
-            {
-              name: "Discord",
-              value: `${
-                (
-                  await client.users.fetch(userProfile.discordId)
-                ).username
-              }\n\`${userProfile.discordId}\``,
-              inline: true,
-            }
-          ),
+          new EmbedBuilder()
+            .setTitle("New Purchase")
+            .addFields(
+              {
+                name: "Product Name",
+                value: requestedProduct.data.name,
+                inline: true,
+              },
+              {
+                name: "Method",
+                value: `\`${req.body.method}\``,
+                inline: true,
+              },
+              {
+                name: "Sale Type",
+                value: `\`Normal\``,
+                inline: true,
+              },
+              {
+                name: "Roblox",
+                value: `${userProfile.robloxUsername}\n\`${userProfile.robloxId}\``,
+                inline: true,
+              },
+              {
+                name: "Discord",
+                value: `${
+                  (
+                    await client.users.fetch(userProfile.discordId)
+                  ).username
+                }\n\`${userProfile.discordId}\``,
+                inline: true,
+              }
+            )
+            .setThumbnail(userProfile.thumbnailUrl)
+            .setColor("Purple")
+            .setTimestamp(),
         ],
       });
 
