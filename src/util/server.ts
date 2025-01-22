@@ -15,26 +15,20 @@ server.use(bodyParser.text());
 server.use(express.json());
 
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const authorizationheader = req.headers["authorization"];
+  const authorizationHeader = req.headers["authorization"];
 
-  if (!authorizationheader) {
+  if (
+    !authorizationHeader ||
+    authorizationHeader !== Bun.env.AUTHORIZATION_KEY
+  ) {
     res.status(401).json({
       message: "Unauthorized",
-
       status: "401",
     });
     return;
-  } else {
-    if (authorizationheader !== Bun.env.AUTHORIZATION_KEY) {
-      res.status(401).json({
-        message: "Unauthorized",
-        status: "401",
-      });
-      return;
-    } else {
-      next();
-    }
   }
+
+  next();
 };
 
 interface PostDataUpdate {
@@ -45,6 +39,7 @@ interface ProductPurchase {
   robloxId: string;
   productId: string;
   method: string;
+  purType: string;
 }
 
 interface ParcelProduct {
@@ -66,12 +61,12 @@ server.post(
   authMiddleware as any,
   async (req: ModifiedBody<ProductPurchase>, res) => {
     try {
-      const { productId, robloxId } = req.body;
+      const { productId, robloxId, method, purType } = req.body;
 
       if (!productId || !robloxId) {
         res.status(400).json({
           message: "Invalid Request",
-          status: "INVLD_REQ",
+          status: "400",
         });
         return;
       }
@@ -119,12 +114,12 @@ server.post(
               },
               {
                 name: "Method",
-                value: `\`${req.body.method}\``,
+                value: `\`${method}\``,
                 inline: true,
               },
               {
                 name: "Sale Type",
-                value: `\`Normal\``,
+                value: `\`${purType}\``,
                 inline: true,
               },
               {
@@ -176,8 +171,8 @@ server.post(
   }
 );
 
-server.post(
-  "/credits/sub/:robloxId",
+server.patch(
+  "/credits/:robloxId",
   authMiddleware as any,
   async (req: ModifiedBody<PostDataUpdate>, res) => {
     try {
@@ -188,16 +183,17 @@ server.post(
       if (!req.body.credits) {
         res.status(400).json({
           message: "Missing Credits",
-          status: "NOT_FND",
+          status: "400",
         });
+        return;
       }
 
       let credits = String(req.body.credits);
 
-      if (credits.length === 4) {
-        credits = credits.slice(0, 2) + "." + credits.slice(2);
-      } else if (credits.length === 3) {
-        credits = credits.slice(0, 1) + "." + credits.slice(1);
+      if (credits.length >= 3) {
+        const decimalIndex = credits.length - 2;
+        credits =
+          credits.slice(0, decimalIndex) + "." + credits.slice(decimalIndex);
       }
 
       const userBalance = userProfile.balance;
@@ -224,20 +220,21 @@ server.post(
 
         res.status(500).json({
           message,
-          status: "ERR",
+          status: "500",
         });
+        return;
       }
 
       res.status(500).json({
         message: "Internal Server Error",
-        status: "ERR",
+        status: "500",
       });
     }
   }
 );
 
 server.post(
-  "/credits/add/:robloxId",
+  "/credits/:robloxId",
   authMiddleware as any,
   async (req: ModifiedBody<PostDataUpdate>, res) => {
     try {
@@ -248,16 +245,17 @@ server.post(
       if (!req.body.credits) {
         res.status(400).json({
           message: "Missing Credits",
-          status: "NOT_FND",
+          status: "400",
         });
+        return;
       }
 
-      let credits = req.body.credits.toString();
+      let credits = String(req.body.credits);
 
-      if (credits.length === 4) {
-        credits = credits.slice(0, 2) + "." + credits.slice(2);
-      } else if (credits.length === 3) {
-        credits = credits.slice(0, 1) + "." + credits.slice(1);
+      if (credits.length >= 3) {
+        const decimalIndex = credits.length - 2;
+        credits =
+          credits.slice(0, decimalIndex) + "." + credits.slice(decimalIndex);
       }
 
       let userBalance = userProfile.balance;
@@ -274,8 +272,6 @@ server.post(
         status: "OK",
       });
     } catch (err) {
-      baseLogger.error(err);
-
       if (err instanceof Error) {
         const errorMessages: Record<string, string> = {
           BLOXLINK_ERR: err.message,
@@ -286,13 +282,14 @@ server.post(
 
         res.status(500).json({
           message,
-          status: "ERR",
+          status: "500",
         });
+        return;
       }
 
       res.status(500).json({
         message: "Internal Server Error",
-        status: "ERR",
+        status: "500",
       });
     }
   }
@@ -334,8 +331,8 @@ server.get("/credits/:robloxId", authMiddleware as any, async (req, res) => {
 
 server.get("/", (_req, res) => {
   res.status(200).json({
-    message: "Celestial Hub",
-    status: "OK",
+    message: "Celestial Hub v1.2",
+    status: "200",
   });
 });
 
