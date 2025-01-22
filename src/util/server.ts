@@ -9,6 +9,7 @@ import { fetchOrCreateUser } from "./userStore";
 import user from "schemas/user";
 import got from "got";
 import { EmbedBuilder, type GuildTextBasedChannel } from "discord.js";
+import { getValue, setValue } from "./redis";
 
 const server = express();
 server.use(bodyParser.text());
@@ -62,14 +63,27 @@ server.post(
   async (req: ModifiedBody<ProductPurchase>, res) => {
     try {
       const { productId, robloxId, method, purType } = req.body;
+      const idempotencyKey = req.headers["idempotency-key"] as string;
 
-      if (!productId || !robloxId) {
+      if (!productId || !robloxId || !idempotencyKey) {
         res.status(400).json({
           message: "Invalid Request",
           status: "400",
         });
         return;
       }
+
+      const isDuplicate = await getValue(idempotencyKey);
+
+      if (isDuplicate) {
+        res.status(400).json({
+          message: "Duplicate Request",
+          status: "409",
+        });
+        return;
+      }
+
+      await setValue(idempotencyKey, "processed", 2);
 
       const purchaseLogs = (await client.channels.fetch(
         "1280065558116827228"

@@ -18,6 +18,7 @@ declare global {
       ROBLOX_COOKIE: string;
       AUTHORIZATION_KEY: string;
       PORT: string;
+      REDIS_URL: string;
     }
   }
 }
