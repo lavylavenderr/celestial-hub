@@ -137,12 +137,12 @@ server.post(
                 inline: true,
               },
               {
-                name: "Roblox",
+                name: purType === "Gift" ? "Reciever's Roblox" : "Roblox",
                 value: `${userProfile.robloxUsername}\n\`${userProfile.robloxId}\``,
                 inline: true,
               },
               {
-                name: "Discord",
+                name: purType === "Gift" ? "Reciever's Discord" : "Discord",
                 value: `${
                   (
                     await client.users.fetch(userProfile.discordId)
@@ -175,6 +175,7 @@ server.post(
           message,
           status: "ERR",
         });
+        return;
       }
 
       res.status(500).json({
