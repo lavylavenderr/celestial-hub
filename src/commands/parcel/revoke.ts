@@ -85,7 +85,7 @@ export default new SlashCommand(
       });
 
       const whitelistCheck = await got(
-        `https://v2.parcelroblox.com/whitelist/check/roblox/${userProfile.robloxId}?product_id=${productId}`,
+        `https://v2.parcelroblox.com/whitelist/check/discord/${userProfile.discordId}?product_id=${productId}`,
         {
           headers: { Authorization: Bun.env.PARCEL_KEY },
           responseType: "json",
@@ -119,8 +119,8 @@ export default new SlashCommand(
         responseType: "json",
         json: {
           product_id: productId,
-          userid: userProfile.robloxId,
-          userid_type: "roblox",
+          userid: userProfile.discordId,
+          userid_type: "discord",
         },
         hooks: {
           beforeError: [

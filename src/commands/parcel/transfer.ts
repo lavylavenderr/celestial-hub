@@ -71,7 +71,7 @@ export default new SlashCommand(
       });
 
       const whitelistCheck = await got(
-        `https://v2.parcelroblox.com/whitelist/check/roblox/${fromUserProfile.robloxId}?product_id=${productId}`,
+        `https://v2.parcelroblox.com/whitelist/check/discord/${fromUserProfile.discordId}?product_id=${productId}`,
         {
           headers: { Authorization: Bun.env.PARCEL_KEY },
           responseType: "json",
@@ -94,13 +94,13 @@ export default new SlashCommand(
       if (!whitelistCheck.data.owns_license) {
         return interaction.editReply({
           embeds: [
-            new ErrorEmbed("Oops! The from user does not own this product."),
+            new ErrorEmbed("Oops! The sender does not own this product."),
           ],
         });
       }
 
       const whitelistCheck2 = await got(
-        `https://v2.parcelroblox.com/whitelist/check/roblox/${toUserProfile.robloxId}?product_id=${productId}`,
+        `https://v2.parcelroblox.com/whitelist/check/discord/${toUserProfile.discordId}?product_id=${productId}`,
         {
           headers: { Authorization: Bun.env.PARCEL_KEY },
           responseType: "json",
@@ -123,7 +123,7 @@ export default new SlashCommand(
       if (whitelistCheck2.data.owns_license) {
         return interaction.editReply({
           embeds: [
-            new ErrorEmbed("Oops! The recieving user does own this product."),
+            new ErrorEmbed("Oops! The reciever already owns this product."),
           ],
         });
       }
@@ -135,12 +135,12 @@ export default new SlashCommand(
         json: {
           product_id: productId,
           sender: {
-            userid: fromUserProfile.robloxId,
-            userid_type: "roblox",
+            userid: fromUserProfile.discordId,
+            userid_type: "discord",
           },
           recipient: {
-            userid: toUserProfile.robloxId,
-            userid_type: "roblox",
+            userid: toUserProfile.discordId,
+            userid_type: "discord",
           },
         },
         hooks: {

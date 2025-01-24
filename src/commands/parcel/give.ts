@@ -128,8 +128,8 @@ export default new SlashCommand(
         responseType: "json",
         json: {
           product_id: productId,
-          userid: userProfile.robloxId,
-          userid_type: "roblox",
+          userid: userProfile.discordId,
+          userid_type: "discord",
         },
         hooks: {
           beforeError: [

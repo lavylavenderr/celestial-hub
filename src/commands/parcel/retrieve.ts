@@ -1,12 +1,8 @@
-import { DiscordErrorCodes } from "@constants";
 import {
   ButtonBuilder,
   ButtonStyle,
-  DiscordAPIError,
   EmbedBuilder,
-  RESTJSONErrorCodes,
   SlashCommandStringOption,
-  type DiscordErrorData,
 } from "discord.js";
 import { ErrorEmbed } from "embeds/response";
 import got from "got";
@@ -50,7 +46,7 @@ export default new SlashCommand(schema, async (interaction) => {
     });
 
     const whitelistCheck = await got(
-      `https://v2.parcelroblox.com/whitelist/check/roblox/${userProfile.robloxId}?product_id=${productId}`,
+      `https://v2.parcelroblox.com/whitelist/check/discord/${userProfile.discordId}?product_id=${productId}`,
       {
         headers: { Authorization: Bun.env.PARCEL_KEY },
         responseType: "json",
