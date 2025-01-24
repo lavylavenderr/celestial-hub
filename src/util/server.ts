@@ -83,7 +83,7 @@ server.post(
         return;
       }
 
-      await setValue(idempotencyKey, "processed", 2);
+      await setValue(idempotencyKey, "processed", 15);
 
       const purchaseLogs = (await client.channels.fetch(
         "1280065558116827228"

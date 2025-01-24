@@ -1,6 +1,5 @@
 import { ActionRowBuilder, type AnyComponentBuilder } from 'discord.js';
 import {
-  ButtonComponent,
   Component,
   type AnyComponent,
   type ComponentBuilderType,

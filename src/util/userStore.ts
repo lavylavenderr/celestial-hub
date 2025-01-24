@@ -12,12 +12,6 @@ interface bloxlinkResponse {
   robloxID?: string;
 }
 
-interface whitelistResponse {
-  data: {
-    owns_license: boolean;
-  };
-}
-
 export async function fetchOrCreateUser({
   robloxId,
   discordId,

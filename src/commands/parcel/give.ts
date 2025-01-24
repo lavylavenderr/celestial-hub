@@ -177,7 +177,7 @@ export default new SlashCommand(
           embeds: [
             new EmbedBuilder()
               .setColor("#cc8eff")
-              .setTitle("Tada! You've received your asset!")
+              .setTitle("<a:Party:1304285151920128042> Tada! You've received your asset!")
               .setDescription(
                 `You've received **${productName}**. You can download it below!`
               ),
@@ -185,7 +185,7 @@ export default new SlashCommand(
           components: [
             actionRow([
               new ButtonBuilder()
-                .setLabel("Download the Product")
+                .setLabel("Download Product")
                 .setStyle(ButtonStyle.Link)
                 .setURL(
                   `https://my.parcelroblox.com/retrieve/${Bun.env.PARCEL_ID}/${productId}`

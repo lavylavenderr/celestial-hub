@@ -1,6 +1,5 @@
 import { Messages } from "@constants";
 import {
-  ChatInputCommandInteraction,
   PermissionFlagsBits,
   MessageFlags,
 } from "discord.js";

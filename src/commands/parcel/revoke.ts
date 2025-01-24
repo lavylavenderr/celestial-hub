@@ -150,9 +150,11 @@ export default new SlashCommand(
           embeds: [
             new EmbedBuilder()
               .setColor("#cc8eff")
-              .setTitle("Oh no!")
+              .setTitle("License Revoked")
               .setDescription(
-                `**${productName}** has been revoked from you. Please open a ticket for further information.`
+                `<:exclamation:1304850886761123972> Attention, the asset, **${productName}**, has been revoked from your profile. Any attempt in using the asset further on may result in a Celestial Technologies blacklist.\n\n<:rightarrow:1304850836559626260> **Reason:** ${
+                  options.reason || "No reason provided."
+                }\n\nYou may contact support by DMing <@1281933022815584310>`
               ),
           ],
         })
@@ -170,12 +172,12 @@ export default new SlashCommand(
                 value: productName,
               },
               {
-                name: "Revokee",
+                name: "Revoked From",
                 value: `${userProfile.robloxUsername} (${userProfile.robloxId})`,
               },
               {
                 name: "Reason",
-                value: options.reason ?? "No Reason Provided",
+                value: options.reason || "No Reason Provided",
               }
             )
             .setThumbnail(userProfile.thumbnailUrl || client.user.avatarURL()!),
