@@ -63,36 +63,7 @@ cronitor.schedule("CelestialUpdateUsers", "*/60 * * * *", async () => {
         }
       );
     } catch (err) {
-      const errorChannel = (await client.channels.fetch(
-        "1332479859708133406"
-      )) as GuildTextBasedChannel;
-      const errorEmbed = new EmbedBuilder()
-        .setDescription(
-          "Oh no! I failed to update a user profile. This error is being sent because a user failed to be updated during the hourly cron job. Here is the user's information."
-        )
-        .setTitle("Cron Error")
-        .addFields(
-          {
-            name: "Roblox",
-            value: `${userProf.robloxUsername} (${userProf.robloxId})`,
-            inline: true,
-          },
-          {
-            name: "Discord",
-            value: `${
-              client.users.cache.get(userProf.discordId)?.username ?? "N/A"
-            } (${userProf.discordId})`,
-            inline: true,
-          }
-        )
-        .setColor("Purple")
-        .setThumbnail(userProf.thumbnailUrl || client.user.avatarURL()!);
-
       baseLogger.error(err);
-      return errorChannel.send({
-        content: "<@988801425196867644>",
-        embeds: [errorEmbed],
-      });
     }
   }
 });
